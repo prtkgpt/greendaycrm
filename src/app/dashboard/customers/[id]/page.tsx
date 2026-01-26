@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -10,16 +11,35 @@ import {
   MapPin,
   Calendar,
   DollarSign,
-  Pencil,
   Trash2,
   Plus,
   Clock,
   FileText,
   ExternalLink,
+  Camera,
+  Upload,
+  X,
+  Loader2,
+  ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency, formatDate, formatTime, formatPhone, getStatusColor, getInitials } from '@/lib/utils';
 
@@ -40,6 +60,14 @@ interface Invoice {
   total: number;
   createdAt: string;
   dueDate: string | null;
+}
+
+interface Photo {
+  id: string;
+  url: string;
+  type: string;
+  description: string | null;
+  uploadedAt: string;
 }
 
 interface Customer {
@@ -66,16 +94,28 @@ interface Customer {
 export default function CustomerDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [photoType, setPhotoType] = useState<'before' | 'after' | 'property'>('property');
+  const [photoDescription, setPhotoDescription] = useState('');
 
   useEffect(() => {
-    fetch(`/api/customers/${params.id}`)
-      .then((res) => {
+    Promise.all([
+      fetch(`/api/customers/${params.id}`).then((res) => {
         if (!res.ok) throw new Error('Customer not found');
         return res.json();
+      }),
+      fetch(`/api/customers/${params.id}/photos`).then((res) => res.json()),
+    ])
+      .then(([customerData, photosData]) => {
+        setCustomer(customerData);
+        setPhotos(Array.isArray(photosData) ? photosData : []);
       })
-      .then(setCustomer)
       .catch(() => {
         toast({ title: 'Error', description: 'Customer not found', variant: 'destructive' });
         router.push('/dashboard/customers');
@@ -97,6 +137,79 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // First upload the file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const error = await uploadRes.json();
+        throw new Error(error.error || 'Failed to upload');
+      }
+
+      const { url } = await uploadRes.json();
+
+      // Then create the photo record
+      const photoRes = await fetch(`/api/customers/${params.id}/photos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url,
+          type: photoType,
+          description: photoDescription || null,
+        }),
+      });
+
+      if (!photoRes.ok) throw new Error('Failed to save photo');
+
+      const newPhoto = await photoRes.json();
+      setPhotos([newPhoto, ...photos]);
+      setIsUploadDialogOpen(false);
+      setPhotoDescription('');
+      setPhotoType('property');
+      toast({ title: 'Success', description: 'Photo uploaded', variant: 'success' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to upload photo',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('Delete this photo?')) return;
+
+    try {
+      const res = await fetch(`/api/customers/${params.id}/photos?photoId=${photoId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to delete');
+
+      setPhotos(photos.filter((p) => p.id !== photoId));
+      setSelectedPhoto(null);
+      toast({ title: 'Success', description: 'Photo deleted', variant: 'success' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete photo', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -112,10 +225,19 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
     .filter((i) => i.status === 'paid')
     .reduce((sum, i) => sum + i.total, 0);
 
+  const photoTypeLabel = (type: string) => {
+    switch (type) {
+      case 'before': return 'Before';
+      case 'after': return 'After';
+      case 'property': return 'Property';
+      default: return type;
+    }
+  };
+
   return (
     <div className="space-y-6 pb-20 lg:pb-0">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/customers">
             <Button variant="ghost" size="icon">
@@ -270,7 +392,7 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
               </div>
             )}
 
-            {customer.tags.length > 0 && (
+            {Array.isArray(customer.tags) && customer.tags.length > 0 && (
               <div className="pt-4 border-t">
                 <p className="text-xs text-gray-500 mb-2">Tags</p>
                 <div className="flex flex-wrap gap-1">
@@ -327,6 +449,58 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
           </CardContent>
         </Card>
       </div>
+
+      {/* Photos */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Camera className="w-5 h-5" />
+            Property Photos
+          </CardTitle>
+          <Button size="sm" onClick={() => setIsUploadDialogOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Photo
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {photos.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {photos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
+                  onClick={() => setSelectedPhoto(photo)}
+                >
+                  <img
+                    src={photo.url}
+                    alt={photo.description || 'Property photo'}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                  <Badge
+                    className="absolute top-2 left-2 text-xs"
+                    variant="secondary"
+                  >
+                    {photoTypeLabel(photo.type)}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-gray-500">
+              <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+              <p>No photos yet</p>
+              <Button
+                variant="link"
+                onClick={() => setIsUploadDialogOpen(true)}
+                className="mt-2"
+              >
+                Upload your first photo
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Invoices */}
       <Card>
@@ -386,6 +560,106 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
           )}
         </CardContent>
       </Card>
+
+      {/* Upload Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Photo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Photo Type</Label>
+              <Select
+                value={photoType}
+                onValueChange={(v) => setPhotoType(v as 'before' | 'after' | 'property')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="property">Property</SelectItem>
+                  <SelectItem value="before">Before</SelectItem>
+                  <SelectItem value="after">After</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Description (optional)</Label>
+              <Input
+                value={photoDescription}
+                onChange={(e) => setPhotoDescription(e.target.value)}
+                placeholder="e.g., Front yard after mowing"
+              />
+            </div>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Select Photo
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Max 5MB. JPEG, PNG, WebP, or GIF.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Photo Preview Dialog */}
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-3xl">
+          {selectedPhoto && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>{photoTypeLabel(selectedPhoto.type)} Photo</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeletePhoto(selectedPhoto.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
+                <img
+                  src={selectedPhoto.url}
+                  alt={selectedPhoto.description || 'Property photo'}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              {selectedPhoto.description && (
+                <p className="text-sm text-gray-600">{selectedPhoto.description}</p>
+              )}
+              <p className="text-xs text-gray-400">
+                Uploaded {formatDate(selectedPhoto.uploadedAt)}
+              </p>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
