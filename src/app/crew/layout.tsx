@@ -1,9 +1,14 @@
-import { Metadata } from 'next';
+import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
   title: 'GreenDay Crew',
   description: 'Crew mobile app for GreenDay CRM',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function CrewLayout({ children }: { children: React.ReactNode }) {
