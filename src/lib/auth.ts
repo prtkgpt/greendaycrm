@@ -45,9 +45,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
-        token.companyName = user.companyName;
-        token.subscriptionStatus = user.subscriptionStatus;
-        token.subscriptionTier = user.subscriptionTier;
+        token.companyName = user.companyName ?? undefined;
+        token.subscriptionStatus = user.subscriptionStatus ?? undefined;
+        token.subscriptionTier = user.subscriptionTier ?? undefined;
       }
 
       // Handle session updates
