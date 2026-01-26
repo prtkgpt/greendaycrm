@@ -1,12 +1,13 @@
 # Dependencies
 node_modules/
 
+# Next.js
+.next/
+out/
+
 # Build outputs
 dist/
 build/
-
-# Database
-server/data/
 
 # Environment
 .env
@@ -29,3 +30,7 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel
