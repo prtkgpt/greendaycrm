@@ -35,6 +35,12 @@ app.get('/api/customers/:id', (req, res) => {
 
 app.post('/api/customers', (req, res) => {
   const { name, email, phone, address, notes } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Customer name is required' });
+    return;
+  }
+  
   db.run(
     'INSERT INTO customers (name, email, phone, address, notes) VALUES (?, ?, ?, ?, ?)',
     [name, email, phone, address, notes],
@@ -86,6 +92,12 @@ app.get('/api/services', (req, res) => {
 
 app.post('/api/services', (req, res) => {
   const { name, description, base_price, duration } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Service name is required' });
+    return;
+  }
+  
   db.run(
     'INSERT INTO services (name, description, base_price, duration) VALUES (?, ?, ?, ?)',
     [name, description, base_price, duration],
@@ -137,6 +149,12 @@ app.get('/api/staff', (req, res) => {
 
 app.post('/api/staff', (req, res) => {
   const { name, email, phone, specialization } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Staff name is required' });
+    return;
+  }
+  
   db.run(
     'INSERT INTO staff (name, email, phone, specialization) VALUES (?, ?, ?, ?)',
     [name, email, phone, specialization],
@@ -225,6 +243,12 @@ app.get('/api/jobs/today', (req, res) => {
 
 app.post('/api/jobs', (req, res) => {
   const { customer_id, service_id, staff_id, scheduled_date, notes } = req.body;
+  
+  if (!customer_id || !service_id || !scheduled_date) {
+    res.status(400).json({ error: 'Customer, service, and scheduled date are required' });
+    return;
+  }
+  
   db.run(
     'INSERT INTO jobs (customer_id, service_id, staff_id, scheduled_date, notes) VALUES (?, ?, ?, ?, ?)',
     [customer_id, service_id, staff_id, scheduled_date, notes],
@@ -288,6 +312,12 @@ app.get('/api/invoices', (req, res) => {
 
 app.post('/api/invoices', (req, res) => {
   const { job_id, amount, due_date } = req.body;
+  
+  if (!job_id || !amount || !due_date) {
+    res.status(400).json({ error: 'Job, amount, and due date are required' });
+    return;
+  }
+  
   db.run(
     'INSERT INTO invoices (job_id, amount, due_date) VALUES (?, ?, ?)',
     [job_id, amount, due_date],
@@ -318,18 +348,39 @@ app.put('/api/invoices/:id', (req, res) => {
 
 // Dashboard stats
 app.get('/api/dashboard/stats', (req, res) => {
-  const stats = {};
+  const stats = {
+    totalCustomers: 0,
+    scheduledJobs: 0,
+    totalRevenue: 0,
+    pendingInvoices: 0
+  };
   
   db.get('SELECT COUNT(*) as total FROM customers', [], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
     stats.totalCustomers = row ? row.total : 0;
     
     db.get('SELECT COUNT(*) as total FROM jobs WHERE status = "scheduled"', [], (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
       stats.scheduledJobs = row ? row.total : 0;
       
       db.get('SELECT SUM(amount) as total FROM invoices WHERE status = "paid"', [], (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
         stats.totalRevenue = row && row.total ? row.total : 0;
         
         db.get('SELECT COUNT(*) as total FROM invoices WHERE status = "pending"', [], (err, row) => {
+          if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+          }
           stats.pendingInvoices = row ? row.total : 0;
           res.json(stats);
         });
