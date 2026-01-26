@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: ['class'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,23 +10,49 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        green: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
-          950: '#052e16',
+        border: 'hsl(214.3 31.8% 91.4%)',
+        input: 'hsl(214.3 31.8% 91.4%)',
+        ring: 'hsl(142.1 76.2% 36.3%)',
+        background: 'hsl(0 0% 100%)',
+        foreground: 'hsl(222.2 84% 4.9%)',
+        primary: {
+          DEFAULT: 'hsl(142.1 76.2% 36.3%)',
+          foreground: 'hsl(355.7 100% 97.3%)',
         },
+        secondary: {
+          DEFAULT: 'hsl(210 40% 96.1%)',
+          foreground: 'hsl(222.2 47.4% 11.2%)',
+        },
+        destructive: {
+          DEFAULT: 'hsl(0 84.2% 60.2%)',
+          foreground: 'hsl(210 40% 98%)',
+        },
+        muted: {
+          DEFAULT: 'hsl(210 40% 96.1%)',
+          foreground: 'hsl(215.4 16.3% 46.9%)',
+        },
+        accent: {
+          DEFAULT: 'hsl(210 40% 96.1%)',
+          foreground: 'hsl(222.2 47.4% 11.2%)',
+        },
+      },
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;

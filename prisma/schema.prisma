@@ -1,0 +1,298 @@
+// GreenDay CRM - Prisma Schema
+// Production-ready schema for landscaping business management
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String?
+  password           String
+  companyName        String?
+  phone              String?
+  address            String?
+  city               String?
+  state              String?
+  zip                String?
+  logo               String?
+
+  // Stripe
+  stripeCustomerId   String?
+  subscriptionId     String?
+  subscriptionStatus String?   @default("trial") // trial, active, canceled, past_due
+  subscriptionTier   String?   @default("starter") // starter, growth, pro
+  trialEndsAt        DateTime?
+
+  emailVerified      DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  customers          Customer[]
+  jobs               Job[]
+  crews              Crew[]
+  invoices           Invoice[]
+  serviceTypes       ServiceType[]
+
+  @@index([email])
+}
+
+// ============================================
+// CUSTOMERS
+// ============================================
+
+model Customer {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name                String
+  email               String?
+  phone               String?
+  address             String
+  city                String
+  state               String
+  zip                 String
+  lat                 Float?
+  lng                 Float?
+
+  propertySize        String?
+  gateCode            String?
+  specialInstructions String?   @db.Text
+  tags                String[]  @default([])
+
+  status              String    @default("active") // active, inactive
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  jobs                Job[]
+  invoices            Invoice[]
+  photos              CustomerPhoto[]
+  recurringBillings   RecurringBilling[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([name])
+}
+
+model CustomerPhoto {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  url         String
+  type        String   // before, after, property
+  description String?
+  uploadedAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+
+// ============================================
+// CREWS
+// ============================================
+
+model Crew {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  phone     String?
+  email     String?
+  color     String?  // for calendar display (hex color)
+  pin       String?  // for crew app login
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  jobs      Job[]
+  routes    Route[]
+
+  @@index([userId])
+}
+
+// ============================================
+// JOBS
+// ============================================
+
+model Job {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  crewId          String?
+  crew            Crew?     @relation(fields: [crewId], references: [id], onDelete: SetNull)
+  serviceTypeId   String?
+  serviceType     ServiceType? @relation(fields: [serviceTypeId], references: [id], onDelete: SetNull)
+
+  title           String
+  description     String?   @db.Text
+
+  scheduledDate   DateTime
+  scheduledTime   String?   // "09:00"
+  duration        Int?      // minutes
+
+  status          String    @default("scheduled") // scheduled, in_progress, completed, canceled, weather_delay
+
+  // Recurring
+  isRecurring         Boolean   @default(false)
+  recurrencePattern   String?   // weekly, biweekly, monthly
+  recurrenceEndDate   DateTime?
+  parentJobId         String?
+
+  price           Float?
+
+  // Completion
+  completedAt     DateTime?
+  checkInTime     DateTime?
+  checkOutTime    DateTime?
+  checkInLat      Float?
+  checkInLng      Float?
+  notes           String?   @db.Text
+  beforePhotos    String[]  @default([])
+  afterPhotos     String[]  @default([])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  invoice         Invoice?
+
+  @@index([userId])
+  @@index([customerId])
+  @@index([crewId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+// ============================================
+// ROUTES
+// ============================================
+
+model Route {
+  id              String   @id @default(cuid())
+  crewId          String
+  crew            Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+
+  date            DateTime
+  jobIds          String[] // ordered array of job IDs
+  optimizedOrder  Json?    // Google Maps route data
+  totalDistance   Float?   // miles
+  totalDuration   Int?     // minutes
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([crewId])
+  @@index([date])
+}
+
+// ============================================
+// INVOICES
+// ============================================
+
+model Invoice {
+  id              String    @id @default(cuid())
+  invoiceNumber   String    @unique
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobId           String?   @unique
+  job             Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  // Line items stored as JSON
+  lineItems       Json      @default("[]")
+
+  subtotal        Float
+  taxRate         Float?    @default(0)
+  tax             Float?    @default(0)
+  total           Float
+
+  status          String    @default("draft") // draft, sent, paid, overdue, canceled
+
+  dueDate         DateTime?
+  paidDate        DateTime?
+  sentDate        DateTime?
+
+  // Stripe
+  stripeInvoiceId       String?
+  stripePaymentIntentId String?
+  stripePaymentUrl      String?
+
+  notes           String?   @db.Text
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([customerId])
+  @@index([status])
+  @@index([invoiceNumber])
+}
+
+// ============================================
+// RECURRING BILLING
+// ============================================
+
+model RecurringBilling {
+  id            String    @id @default(cuid())
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  description   String
+  amount        Float
+  frequency     String    // weekly, biweekly, monthly
+  startDate     DateTime
+  endDate       DateTime?
+  active        Boolean   @default(true)
+  nextBillDate  DateTime
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([customerId])
+  @@index([nextBillDate])
+}
+
+// ============================================
+// SERVICE TYPES
+// ============================================
+
+model ServiceType {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String?
+  defaultPrice  Float?
+  duration      Int?     // minutes
+  color         String?  // for calendar display
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  jobs          Job[]
+
+  @@index([userId])
+}
