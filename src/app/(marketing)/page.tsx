@@ -132,10 +132,13 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button variant="ghost">Sign In</Button>
+              <Link href="/team-login">
+                <Button variant="ghost" size="sm">Team Login</Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/owner-login">
+                <Button variant="outline">Owner Sign In</Button>
+              </Link>
+              <Link href="/owner-signup">
                 <Button>Start Free Trial</Button>
               </Link>
             </div>
@@ -160,7 +163,7 @@ export default function LandingPage() {
             Built specifically for landscapers and lawn care professionals.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
+            <Link href="/owner-signup">
               <Button size="lg" className="text-lg px-8">
                 Start 14-Day Free Trial
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -290,7 +293,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/signup">
+                  <Link href="/owner-signup">
                     <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
                       {plan.cta}
                     </Button>
@@ -343,7 +346,7 @@ export default function LandingPage() {
           <p className="text-xl text-emerald-100 mb-8">
             Start your 14-day free trial today. No credit card required.
           </p>
-          <Link href="/signup">
+          <Link href="/owner-signup">
             <Button size="lg" variant="secondary" className="text-lg px-8">
               Start Free Trial
               <ArrowRight className="w-5 h-5 ml-2" />

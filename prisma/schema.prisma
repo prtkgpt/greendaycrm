@@ -12,7 +12,7 @@ datasource db {
 }
 
 // ============================================
-// USER & AUTHENTICATION
+// USER & AUTHENTICATION (Business Owners)
 // ============================================
 
 model User {
@@ -21,12 +21,15 @@ model User {
   name               String?
   password           String
   companyName        String?
+  slug               String?   @unique // URL-friendly company identifier (e.g., "greenscape-lawn")
   phone              String?
   address            String?
   city               String?
   state              String?
   zip                String?
   logo               String?
+  website            String?
+  description        String?   @db.Text
 
   // Stripe
   stripeCustomerId   String?
@@ -48,6 +51,7 @@ model User {
   routes             Route[]
 
   @@index([email])
+  @@index([slug])
 }
 
 // ============================================
@@ -69,6 +73,11 @@ model Customer {
   lat                 Float?
   lng                 Float?
 
+  // Portal access
+  portalPassword      String?   // Hashed password for customer portal
+  portalEnabled       Boolean   @default(false)
+  lastPortalLogin     DateTime?
+
   propertySize        String?
   gateCode            String?
   specialInstructions String?   @db.Text
@@ -85,6 +94,7 @@ model Customer {
   photos              CustomerPhoto[]
   recurringBillings   RecurringBilling[]
 
+  @@unique([userId, email]) // Email must be unique within a company
   @@index([userId])
   @@index([status])
   @@index([name])
@@ -104,7 +114,7 @@ model CustomerPhoto {
 }
 
 // ============================================
-// CREWS
+// CREWS (Team Members)
 // ============================================
 
 model Crew {
@@ -116,7 +126,8 @@ model Crew {
   phone     String?
   email     String?
   color     String?  // for calendar display (hex color)
-  pin       String?  // for crew app login
+  pin       String?  // 4-6 digit PIN for crew app login
+  role      String   @default("crew") // crew, foreman, manager
   active    Boolean  @default(true)
 
   createdAt DateTime @default(now())
@@ -127,6 +138,7 @@ model Crew {
   routes    Route[]
 
   @@index([userId])
+  @@index([userId, pin]) // For crew login lookup
 }
 
 // ============================================
@@ -310,6 +322,7 @@ model ServiceType {
   duration          Int?     // minutes
   estimatedDuration Int?     // minutes (alias for compatibility)
   color             String?  // for calendar display
+  isPublic          Boolean  @default(true) // Show on public booking page
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -318,4 +331,38 @@ model ServiceType {
   jobs              Job[]
 
   @@index([userId])
+}
+
+// ============================================
+// SERVICE REQUESTS (Customer Bookings)
+// ============================================
+
+model ServiceRequest {
+  id              String    @id @default(cuid())
+  userId          String    // The business owner
+  customerId      String?   // Linked customer (if existing)
+  serviceTypeId   String?
+
+  // Contact info (for new customers)
+  name            String
+  email           String
+  phone           String?
+  address         String
+  city            String
+  state           String
+  zip             String
+
+  // Request details
+  serviceType     String?   // Free text if no serviceTypeId
+  preferredDate   DateTime?
+  preferredTime   String?
+  message         String?   @db.Text
+
+  status          String    @default("pending") // pending, approved, declined, converted
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }

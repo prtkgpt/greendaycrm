@@ -10,6 +10,36 @@ const signupSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
 });
 
+// Generate URL-friendly slug from company name
+function generateSlug(companyName: string): string {
+  return companyName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .trim();
+}
+
+// Ensure slug is unique by appending a number if needed
+async function getUniqueSlug(baseSlug: string): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const existing = await prisma.user.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return slug;
+    }
+
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -40,6 +70,10 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 12);
 
+    // Generate unique slug
+    const baseSlug = generateSlug(companyName);
+    const slug = await getUniqueSlug(baseSlug);
+
     // Calculate trial end date (14 days from now)
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
@@ -51,6 +85,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name,
         companyName,
+        slug,
         subscriptionStatus: 'trial',
         subscriptionTier: 'starter',
         trialEndsAt,
@@ -80,6 +115,7 @@ export async function POST(request: NextRequest) {
           email: user.email,
           name: user.name,
           companyName: user.companyName,
+          slug: user.slug,
         },
       },
       { status: 201 }
