@@ -49,6 +49,23 @@ export async function PUT(
       return NextResponse.json({ error: 'Crew member not found' }, { status: 404 });
     }
 
+    // Check for duplicate PIN within this company (if PIN is being changed)
+    if (data.pin && data.pin !== existing.pin) {
+      const duplicatePin = await prisma.crew.findFirst({
+        where: {
+          userId: session.user.id,
+          pin: data.pin,
+          id: { not: params.id },
+        },
+      });
+      if (duplicatePin) {
+        return NextResponse.json(
+          { error: 'This PIN is already in use by another crew member' },
+          { status: 400 }
+        );
+      }
+    }
+
     const crew = await prisma.crew.update({
       where: { id: params.id },
       data: {
@@ -56,6 +73,8 @@ export async function PUT(
         email: data.email,
         phone: data.phone,
         color: data.color,
+        pin: data.pin,
+        role: data.role,
         active: data.active,
       },
     });

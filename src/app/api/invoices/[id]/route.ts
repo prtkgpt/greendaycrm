@@ -55,11 +55,18 @@ export async function PUT(
 
     // Calculate totals
     const lineItems = data.lineItems || existing.lineItems || [];
-    const subtotal = (lineItems as Array<{ quantity: number; unitPrice: number }>).reduce(
-      (sum: number, item: { quantity: number; unitPrice: number }) =>
-        sum + item.quantity * item.unitPrice,
-      0
-    );
+
+    // Safely calculate subtotal from line items
+    let subtotal = 0;
+    if (Array.isArray(lineItems)) {
+      for (const item of lineItems) {
+        if (item && typeof item === 'object' && 'quantity' in item && 'unitPrice' in item) {
+          const quantity = Number(item.quantity) || 0;
+          const unitPrice = Number(item.unitPrice) || 0;
+          subtotal += quantity * unitPrice;
+        }
+      }
+    }
     const taxRate = data.taxRate ?? existing.taxRate ?? 0;
     const tax = subtotal * (taxRate / 100);
     const total = subtotal + tax;

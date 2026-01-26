@@ -43,6 +43,8 @@ interface Crew {
   email: string | null;
   phone: string | null;
   color: string;
+  pin: string | null;
+  role: string;
   active: boolean;
 }
 
@@ -100,6 +102,7 @@ export default function SettingsPage() {
     name: '',
     email: '',
     phone: '',
+    pin: '',
     role: 'crew',
     color: '#3b82f6',
   });
@@ -175,6 +178,7 @@ export default function SettingsPage() {
           name: '',
           email: '',
           phone: '',
+          pin: '',
           role: 'crew',
           color: '#3b82f6',
         });
@@ -498,6 +502,34 @@ export default function SettingsPage() {
                           />
                         </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>PIN (for mobile login)</Label>
+                          <Input
+                            type="text"
+                            maxLength={6}
+                            placeholder="4-6 digits"
+                            value={crewForm.pin}
+                            onChange={(e) =>
+                              setCrewForm({ ...crewForm, pin: e.target.value.replace(/\D/g, '') })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Role</Label>
+                          <select
+                            value={crewForm.role}
+                            onChange={(e) =>
+                              setCrewForm({ ...crewForm, role: e.target.value })
+                            }
+                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                          >
+                            <option value="crew">Crew</option>
+                            <option value="foreman">Foreman</option>
+                            <option value="manager">Manager</option>
+                          </select>
+                        </div>
+                      </div>
                       <div>
                         <Label>Color</Label>
                         <Input
@@ -539,9 +571,15 @@ export default function SettingsPage() {
                             {crew.name.charAt(0)}
                           </div>
                           <div>
-                            <p className="font-medium">{crew.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{crew.name}</p>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {crew.role}
+                              </Badge>
+                            </div>
                             <p className="text-sm text-gray-500">
                               {crew.email || crew.phone || 'No contact info'}
+                              {crew.pin && ' • PIN set'}
                             </p>
                           </div>
                         </div>

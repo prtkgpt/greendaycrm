@@ -55,8 +55,10 @@ export async function PUT(
         name: data.name,
         description: data.description,
         defaultPrice: data.defaultPrice ? parseFloat(data.defaultPrice) : null,
+        duration: data.duration ? parseInt(data.duration) : null,
         estimatedDuration: data.estimatedDuration ? parseInt(data.estimatedDuration) : null,
         color: data.color,
+        isPublic: data.isPublic,
       },
     });
 
