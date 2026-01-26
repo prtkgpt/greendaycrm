@@ -139,11 +139,13 @@ export default function JobsPage() {
         crewsRes.json(),
       ]);
 
-      setJobs(jobsData);
+      setJobs(Array.isArray(jobsData) ? jobsData : []);
       setCustomers(customersData.customers || []);
-      setServiceTypes(servicesData || []);
-      setCrews(crewsData || []);
+      setServiceTypes(Array.isArray(servicesData) ? servicesData : []);
+      setCrews(Array.isArray(crewsData) ? crewsData : []);
     } catch (error) {
+      console.error('Fetch data error:', error);
+      setJobs([]);
       toast({ title: 'Error', description: 'Failed to fetch data', variant: 'destructive' });
     } finally {
       setLoading(false);

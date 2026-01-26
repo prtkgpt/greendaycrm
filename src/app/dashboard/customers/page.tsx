@@ -115,10 +115,16 @@ export default function CustomersPage() {
       const res = await fetch(`/api/customers?${params}`);
       const data = await res.json();
 
-      setCustomers(data.customers);
-      setTotalPages(data.pagination.totalPages);
-      setTotal(data.pagination.total);
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch customers');
+      }
+
+      setCustomers(data.customers || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setTotal(data.pagination?.total || 0);
     } catch (error) {
+      console.error('Fetch customers error:', error);
+      setCustomers([]);
       toast({ title: 'Error', description: 'Failed to fetch customers', variant: 'destructive' });
     } finally {
       setLoading(false);
