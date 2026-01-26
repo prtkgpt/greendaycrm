@@ -16,6 +16,7 @@ import {
   Pencil,
   Trash2,
   Filter,
+  Repeat,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,9 @@ interface Job {
   scheduledDate: string;
   scheduledTime: string | null;
   price: number | null;
+  isRecurring: boolean;
+  recurrencePattern: string | null;
+  parentJobId: string | null;
   customer: Customer;
   serviceType: ServiceType | null;
   crew: Crew | null;
@@ -317,6 +321,12 @@ export default function JobsPage() {
                           style={{ backgroundColor: job.crew.color || '#e5e7eb' }}
                         >
                           {job.crew.name}
+                        </Badge>
+                      )}
+                      {job.isRecurring && (
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-300">
+                          <Repeat className="w-3 h-3 mr-1" />
+                          {job.recurrencePattern}
                         </Badge>
                       )}
                     </div>
@@ -571,6 +581,7 @@ export default function JobsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
                       <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="biweekly">Every 2 weeks</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>

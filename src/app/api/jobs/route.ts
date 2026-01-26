@@ -125,6 +125,9 @@ export async function POST(request: NextRequest) {
       while (nextDate < endDate) {
         // Advance to next occurrence
         switch (data.recurrencePattern) {
+          case 'daily':
+            nextDate = addDays(nextDate, 1);
+            break;
           case 'weekly':
             nextDate = addWeeks(nextDate, 1);
             break;
