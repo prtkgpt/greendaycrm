@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -25,8 +26,10 @@ import {
   Trash2,
   CheckCircle,
   Crown,
+  Loader2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ServiceType {
   id: string;
@@ -82,12 +85,50 @@ const SUBSCRIPTION_TIERS = [
   },
 ];
 
+interface UserData {
+  id: string;
+  name: string | null;
+  email: string;
+  companyName: string | null;
+  slug: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  website: string | null;
+  description: string | null;
+  subscriptionStatus: string | null;
+  subscriptionTier: string | null;
+  trialEndsAt: string | null;
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const { toast } = useToast();
   const [services, setServices] = useState<ServiceType[]>([]);
   const [crews, setCrews] = useState<Crew[]>([]);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+  });
+
+  // Business form state
+  const [businessForm, setBusinessForm] = useState({
+    companyName: '',
+    phone: '',
+    website: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    description: '',
+  });
 
   const [isServiceDialogOpen, setIsServiceDialogOpen] = useState(false);
   const [isCrewDialogOpen, setIsCrewDialogOpen] = useState(false);
@@ -113,20 +154,95 @@ export default function SettingsPage() {
 
   const fetchData = async () => {
     try {
-      const [servicesRes, crewsRes] = await Promise.all([
+      const [servicesRes, crewsRes, userRes] = await Promise.all([
         fetch('/api/services'),
         fetch('/api/crews'),
+        fetch('/api/user'),
       ]);
-      const [servicesData, crewsData] = await Promise.all([
+      const [servicesData, crewsData, userDataRes] = await Promise.all([
         servicesRes.json(),
         crewsRes.json(),
+        userRes.json(),
       ]);
       setServices(Array.isArray(servicesData) ? servicesData : []);
       setCrews(Array.isArray(crewsData) ? crewsData : []);
+
+      if (userRes.ok && userDataRes) {
+        setUserData(userDataRes);
+        setProfileForm({
+          name: userDataRes.name || '',
+        });
+        setBusinessForm({
+          companyName: userDataRes.companyName || '',
+          phone: userDataRes.phone || '',
+          website: userDataRes.website || '',
+          address: userDataRes.address || '',
+          city: userDataRes.city || '',
+          state: userDataRes.state || '',
+          zip: userDataRes.zip || '',
+          description: userDataRes.description || '',
+        });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'profile', ...profileForm }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save profile');
+      }
+
+      const updatedUser = await res.json();
+      setUserData(updatedUser);
+      toast({ title: 'Success', description: 'Profile saved', variant: 'success' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveBusiness = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'business', ...businessForm }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save business info');
+      }
+
+      const updatedUser = await res.json();
+      setUserData(updatedUser);
+      toast({ title: 'Success', description: 'Business info saved', variant: 'success' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -258,17 +374,31 @@ export default function SettingsPage() {
                 <CardDescription>Your personal account settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Name</Label>
-                    <Input defaultValue={session?.user?.name || ''} />
+                    <Input
+                      value={profileForm.name}
+                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                      placeholder="Your name"
+                    />
                   </div>
                   <div>
                     <Label>Email</Label>
-                    <Input defaultValue={session?.user?.email || ''} disabled />
+                    <Input value={userData?.email || ''} disabled />
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                   </div>
                 </div>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveProfile} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -277,28 +407,94 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Business Information</CardTitle>
-                <CardDescription>Your company details</CardDescription>
+                <CardDescription>Your company details appear on invoices and your public booking page</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <Label>Company Name</Label>
-                  <Input placeholder="Your Business Name" />
+                  <Input
+                    value={businessForm.companyName}
+                    onChange={(e) => setBusinessForm({ ...businessForm, companyName: e.target.value })}
+                    placeholder="Your Business Name"
+                  />
+                  {userData?.slug && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Public URL: greendaycrm.com/{userData.slug}
+                    </p>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Phone</Label>
-                    <Input placeholder="(555) 123-4567" />
+                    <Input
+                      value={businessForm.phone}
+                      onChange={(e) => setBusinessForm({ ...businessForm, phone: e.target.value })}
+                      placeholder="(555) 123-4567"
+                    />
                   </div>
                   <div>
                     <Label>Website</Label>
-                    <Input placeholder="www.yourbusiness.com" />
+                    <Input
+                      value={businessForm.website}
+                      onChange={(e) => setBusinessForm({ ...businessForm, website: e.target.value })}
+                      placeholder="www.yourbusiness.com"
+                    />
                   </div>
                 </div>
                 <div>
-                  <Label>Address</Label>
-                  <Input placeholder="123 Main St, City, State 12345" />
+                  <Label>Street Address</Label>
+                  <Input
+                    value={businessForm.address}
+                    onChange={(e) => setBusinessForm({ ...businessForm, address: e.target.value })}
+                    placeholder="123 Main St"
+                  />
                 </div>
-                <Button>Save Changes</Button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <Label>City</Label>
+                    <Input
+                      value={businessForm.city}
+                      onChange={(e) => setBusinessForm({ ...businessForm, city: e.target.value })}
+                      placeholder="City"
+                    />
+                  </div>
+                  <div>
+                    <Label>State</Label>
+                    <Input
+                      value={businessForm.state}
+                      onChange={(e) => setBusinessForm({ ...businessForm, state: e.target.value })}
+                      placeholder="TX"
+                      maxLength={2}
+                    />
+                  </div>
+                  <div>
+                    <Label>ZIP</Label>
+                    <Input
+                      value={businessForm.zip}
+                      onChange={(e) => setBusinessForm({ ...businessForm, zip: e.target.value })}
+                      placeholder="12345"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Business Description</Label>
+                  <Textarea
+                    value={businessForm.description}
+                    onChange={(e) => setBusinessForm({ ...businessForm, description: e.target.value })}
+                    placeholder="Tell customers about your services..."
+                    rows={3}
+                  />
+                </div>
+                <Button onClick={handleSaveBusiness} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
