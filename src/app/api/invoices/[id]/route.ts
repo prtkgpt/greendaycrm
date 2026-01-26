@@ -18,6 +18,19 @@ export async function GET(
       include: {
         customer: true,
         job: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+            companyName: true,
+            phone: true,
+            address: true,
+            city: true,
+            state: true,
+            zip: true,
+            website: true,
+          },
+        },
       },
     });
 
