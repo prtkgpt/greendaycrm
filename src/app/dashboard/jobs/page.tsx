@@ -102,13 +102,13 @@ export default function JobsPage() {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     customerId: '',
     serviceTypeId: '',
-    crewId: '',
+    crewId: 'none',
     title: '',
     description: '',
     scheduledDate: new Date().toISOString().split('T')[0],
@@ -123,7 +123,7 @@ export default function JobsPage() {
   const fetchData = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (statusFilter) params.set('status', statusFilter);
+      if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
 
       const [jobsRes, customersRes, servicesRes, crewsRes] = await Promise.all([
         fetch(`/api/jobs?${params}`),
@@ -183,6 +183,7 @@ export default function JobsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          crewId: formData.crewId === 'none' ? '' : formData.crewId,
           price: formData.price ? parseFloat(formData.price) : null,
         }),
       });
@@ -197,7 +198,7 @@ export default function JobsPage() {
       setFormData({
         customerId: '',
         serviceTypeId: '',
-        crewId: '',
+        crewId: 'none',
         title: '',
         description: '',
         scheduledDate: new Date().toISOString().split('T')[0],
@@ -288,7 +289,7 @@ export default function JobsPage() {
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="scheduled">Scheduled</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
@@ -528,7 +529,7 @@ export default function JobsPage() {
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="none">Unassigned</SelectItem>
                     {crews.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}

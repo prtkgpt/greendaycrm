@@ -87,7 +87,7 @@ export default function RoutesPage() {
   const [formData, setFormData] = useState({
     name: '',
     date: new Date().toISOString().split('T')[0],
-    crewId: '',
+    crewId: 'none',
     startAddress: '',
   });
 
@@ -140,6 +140,7 @@ export default function RoutesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          crewId: formData.crewId === 'none' ? '' : formData.crewId,
           jobIds: selectedJobs,
         }),
       });
@@ -149,7 +150,7 @@ export default function RoutesPage() {
         setFormData({
           name: '',
           date: selectedDate,
-          crewId: '',
+          crewId: 'none',
           startAddress: '',
         });
         setSelectedJobs([]);
@@ -260,7 +261,7 @@ export default function RoutesPage() {
                       <SelectValue placeholder="Select crew" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No crew</SelectItem>
+                      <SelectItem value="none">No crew</SelectItem>
                       {crews.map((crew) => (
                         <SelectItem key={crew.id} value={crew.id}>
                           {crew.name}
