@@ -73,7 +73,7 @@ export default function SignupPage() {
         variant: 'success',
       });
 
-      router.push('/onboarding');
+      router.push('/dashboard');
     } catch (error) {
       toast({
         title: 'Error',
