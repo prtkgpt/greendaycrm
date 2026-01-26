@@ -132,3 +132,15 @@ greendaycrm/
 ## License
 
 ISC
+
+## Security Considerations
+
+This CRM is designed for internal use within a small landscaping business. For production deployment or public-facing use, consider adding:
+
+- **Rate Limiting**: Prevent abuse by limiting request frequency
+- **Authentication**: Add user login and session management
+- **Authorization**: Role-based access control for different user types
+- **HTTPS**: Use SSL/TLS for encrypted communication
+- **Database Security**: Use prepared statements (already implemented) and consider encryption at rest
+
+For internal, local network use, the current implementation provides adequate security with input validation and parameterized queries to prevent SQL injection.
