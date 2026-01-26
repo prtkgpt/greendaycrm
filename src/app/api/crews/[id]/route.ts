@@ -55,9 +55,8 @@ export async function PUT(
         name: data.name,
         email: data.email,
         phone: data.phone,
-        role: data.role,
         color: data.color,
-        isActive: data.isActive,
+        active: data.active,
       },
     });
 

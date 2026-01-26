@@ -37,9 +37,8 @@ export async function POST(req: NextRequest) {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        role: data.role || 'crew',
         color: data.color || '#3b82f6',
-        isActive: true,
+        active: true,
       },
     });
 

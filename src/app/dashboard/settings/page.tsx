@@ -42,9 +42,8 @@ interface Crew {
   name: string;
   email: string | null;
   phone: string | null;
-  role: string;
   color: string;
-  isActive: boolean;
+  active: boolean;
 }
 
 const SUBSCRIPTION_TIERS = [
@@ -547,8 +546,8 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant={crew.isActive ? 'default' : 'secondary'}>
-                            {crew.isActive ? 'Active' : 'Inactive'}
+                          <Badge variant={crew.active ? 'default' : 'secondary'}>
+                            {crew.active ? 'Active' : 'Inactive'}
                           </Badge>
                           <Button
                             variant="ghost"
