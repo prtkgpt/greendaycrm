@@ -52,11 +52,11 @@ interface Invoice {
   id: string;
   invoiceNumber: string;
   status: string;
-  issueDate: string;
+  createdAt: string;
   dueDate: string;
   subtotal: number;
   taxRate: number;
-  taxAmount: number;
+  tax: number;
   total: number;
   paidAmount: number | null;
   sentDate: string | null;
@@ -99,7 +99,6 @@ export default function InvoicesPage() {
   ]);
   const [formData, setFormData] = useState({
     customerId: '',
-    issueDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     taxRate: '0',
     notes: '',
@@ -154,7 +153,6 @@ export default function InvoicesPage() {
         setIsDialogOpen(false);
         setFormData({
           customerId: '',
-          issueDate: new Date().toISOString().split('T')[0],
           dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
           taxRate: '0',
           notes: '',
@@ -305,17 +303,6 @@ export default function InvoicesPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label>Issue Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.issueDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, issueDate: e.target.value })
-                    }
-                  />
                 </div>
 
                 <div>
@@ -551,7 +538,7 @@ export default function InvoicesPage() {
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{invoice.customer.name}</p>
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                        <span>Issued: {formatDate(invoice.issueDate)}</span>
+                        <span>Issued: {formatDate(invoice.createdAt)}</span>
                         <span>Due: {formatDate(invoice.dueDate)}</span>
                       </div>
                     </div>

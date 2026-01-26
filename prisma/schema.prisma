@@ -45,6 +45,7 @@ model User {
   crews              Crew[]
   invoices           Invoice[]
   serviceTypes       ServiceType[]
+  routes             Route[]
 
   @@index([email])
 }
@@ -142,6 +143,8 @@ model Job {
   crew            Crew?     @relation(fields: [crewId], references: [id], onDelete: SetNull)
   serviceTypeId   String?
   serviceType     ServiceType? @relation(fields: [serviceTypeId], references: [id], onDelete: SetNull)
+  routeId         String?
+  route           Route?    @relation(fields: [routeId], references: [id], onDelete: SetNull)
 
   title           String
   description     String?   @db.Text
@@ -159,6 +162,7 @@ model Job {
   parentJobId         String?
 
   price           Float?
+  routeOrder      Int?      // Order in route
 
   // Completion
   completedAt     DateTime?
@@ -179,6 +183,7 @@ model Job {
   @@index([userId])
   @@index([customerId])
   @@index([crewId])
+  @@index([routeId])
   @@index([scheduledDate])
   @@index([status])
 }
@@ -189,18 +194,33 @@ model Job {
 
 model Route {
   id              String   @id @default(cuid())
-  crewId          String
-  crew            Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crewId          String?
+  crew            Crew?    @relation(fields: [crewId], references: [id], onDelete: SetNull)
 
+  name            String?
   date            DateTime
-  jobIds          String[] // ordered array of job IDs
-  optimizedOrder  Json?    // Google Maps route data
+  status          String   @default("planned") // planned, optimized, in_progress, completed
+
+  // Starting point
+  startAddress    String?
+  startLat        Float?
+  startLng        Float?
+
+  // Optimization data
+  optimizedOrder  Json?    // Array of job IDs in optimized order
   totalDistance   Float?   // miles
   totalDuration   Int?     // minutes
+  estimatedDuration Int?   // minutes (alias for compatibility)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  // Relations
+  jobs            Job[]
+
+  @@index([userId])
   @@index([crewId])
   @@index([date])
 }
@@ -227,11 +247,13 @@ model Invoice {
   tax             Float?    @default(0)
   total           Float
 
-  status          String    @default("draft") // draft, sent, paid, overdue, canceled
+  status          String    @default("draft") // draft, sent, paid, partial, overdue, canceled
 
   dueDate         DateTime?
   paidDate        DateTime?
   sentDate        DateTime?
+  paidAmount      Float?    @default(0)
+  paymentMethod   String?   // manual, stripe, cash, check
 
   // Stripe
   stripeInvoiceId       String?
@@ -278,21 +300,22 @@ model RecurringBilling {
 // ============================================
 
 model ServiceType {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name          String
-  description   String?
-  defaultPrice  Float?
-  duration      Int?     // minutes
-  color         String?  // for calendar display
+  name              String
+  description       String?
+  defaultPrice      Float?
+  duration          Int?     // minutes
+  estimatedDuration Int?     // minutes (alias for compatibility)
+  color             String?  // for calendar display
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  jobs          Job[]
+  jobs              Job[]
 
   @@index([userId])
 }

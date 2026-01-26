@@ -92,11 +92,11 @@ export async function POST(
 
     // Prepare jobs with coordinates
     const jobsWithCoords = route.jobs
-      .filter((job) => job.customer.latitude && job.customer.longitude)
+      .filter((job) => job.customer.lat && job.customer.lng)
       .map((job) => ({
         id: job.id,
-        lat: job.customer.latitude!,
-        lng: job.customer.longitude!,
+        lat: job.customer.lat!,
+        lng: job.customer.lng!,
       }));
 
     if (jobsWithCoords.length === 0) {

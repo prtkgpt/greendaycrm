@@ -61,20 +61,19 @@ export async function PUT(
       0
     );
     const taxRate = data.taxRate ?? existing.taxRate ?? 0;
-    const taxAmount = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmount;
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
 
     const invoice = await prisma.invoice.update({
       where: { id: params.id },
       data: {
         customerId: data.customerId,
         jobId: data.jobId,
-        issueDate: data.issueDate ? new Date(data.issueDate) : undefined,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         lineItems,
         subtotal,
         taxRate,
-        taxAmount,
+        tax,
         total,
         notes: data.notes,
       },

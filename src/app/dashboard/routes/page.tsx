@@ -38,8 +38,8 @@ interface Customer {
   name: string;
   address: string;
   city: string;
-  latitude: number | null;
-  longitude: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 interface Job {

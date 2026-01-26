@@ -100,8 +100,8 @@ export async function POST(req: NextRequest) {
       0
     );
     const taxRate = data.taxRate || 0;
-    const taxAmount = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmount;
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -110,12 +110,11 @@ export async function POST(req: NextRequest) {
         jobId: data.jobId || null,
         invoiceNumber,
         status: 'draft',
-        issueDate: data.issueDate ? new Date(data.issueDate) : new Date(),
         dueDate: data.dueDate ? new Date(data.dueDate) : new Date(Date.now() + 30 * 86400000),
         lineItems: lineItems,
         subtotal,
         taxRate,
-        taxAmount,
+        tax,
         total,
         notes: data.notes,
       },
