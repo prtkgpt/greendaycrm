@@ -152,7 +152,7 @@ export default function CustomersPage() {
         propertySize: customer.propertySize || '',
         gateCode: '',
         specialInstructions: '',
-        tags: customer.tags,
+        tags: Array.isArray(customer.tags) ? customer.tags : [],
       });
     } else {
       setEditingCustomer(null);
@@ -305,8 +305,8 @@ export default function CustomersPage() {
 
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right text-sm hidden sm:block">
-                      <p className="font-medium text-gray-900">{customer._count.jobs} jobs</p>
-                      <p className="text-gray-500">{customer._count.invoices} invoices</p>
+                      <p className="font-medium text-gray-900">{customer._count?.jobs ?? 0} jobs</p>
+                      <p className="text-gray-500">{customer._count?.invoices ?? 0} invoices</p>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -331,7 +331,7 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                {customer.tags.length > 0 && (
+                {Array.isArray(customer.tags) && customer.tags.length > 0 && (
                   <div className="flex gap-1 mt-3 flex-wrap">
                     {customer.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
