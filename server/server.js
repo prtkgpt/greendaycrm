@@ -56,6 +56,12 @@ app.post('/api/customers', (req, res) => {
 
 app.put('/api/customers/:id', (req, res) => {
   const { name, email, phone, address, notes } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Customer name is required' });
+    return;
+  }
+  
   db.run(
     'UPDATE customers SET name = ?, email = ?, phone = ?, address = ?, notes = ? WHERE id = ?',
     [name, email, phone, address, notes, req.params.id],
@@ -113,6 +119,12 @@ app.post('/api/services', (req, res) => {
 
 app.put('/api/services/:id', (req, res) => {
   const { name, description, base_price, duration } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Service name is required' });
+    return;
+  }
+  
   db.run(
     'UPDATE services SET name = ?, description = ?, base_price = ?, duration = ? WHERE id = ?',
     [name, description, base_price, duration, req.params.id],
@@ -170,6 +182,12 @@ app.post('/api/staff', (req, res) => {
 
 app.put('/api/staff/:id', (req, res) => {
   const { name, email, phone, specialization } = req.body;
+  
+  if (!name || name.trim() === '') {
+    res.status(400).json({ error: 'Staff name is required' });
+    return;
+  }
+  
   db.run(
     'UPDATE staff SET name = ?, email = ?, phone = ?, specialization = ? WHERE id = ?',
     [name, email, phone, specialization, req.params.id],
