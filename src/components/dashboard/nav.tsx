@@ -14,6 +14,7 @@ import {
   Leaf,
   Wrench,
   Newspaper,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/dashboard/routes', label: 'Routes', icon: Route },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/dashboard/admin/accounts', label: 'Accounts', icon: Building2, adminOnly: true },
   { href: '/dashboard/blog', label: 'Blog', icon: Newspaper, adminOnly: true },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
