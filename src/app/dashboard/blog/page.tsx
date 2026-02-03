@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Plus,
   Pencil,
@@ -13,6 +14,7 @@ import {
   ExternalLink,
   Save,
   X,
+  ShieldX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +61,7 @@ const defaultForm = {
 
 export default function BlogManagementPage() {
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,9 +69,15 @@ export default function BlogManagementPage() {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [form, setForm] = useState(defaultForm);
 
+  const isAdmin = session?.user?.role === 'admin';
+
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    if (isAdmin) {
+      fetchPosts();
+    } else {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   const fetchPosts = async () => {
     try {
@@ -198,6 +207,16 @@ export default function BlogManagementPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <ShieldX className="w-12 h-12 text-gray-300 mb-3" />
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Access Restricted</h2>
+        <p className="text-sm text-gray-500">Blog management is only available to platform administrators.</p>
       </div>
     );
   }

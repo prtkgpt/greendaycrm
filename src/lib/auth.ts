@@ -35,6 +35,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           companyName: user.companyName,
+          role: user.role,
           subscriptionStatus: user.subscriptionStatus,
           subscriptionTier: user.subscriptionTier,
         };
@@ -46,6 +47,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.companyName = user.companyName ?? undefined;
+        token.role = user.role ?? 'user';
         token.subscriptionStatus = user.subscriptionStatus ?? undefined;
         token.subscriptionTier = user.subscriptionTier ?? undefined;
       }
@@ -61,6 +63,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.companyName = token.companyName as string;
+        session.user.role = token.role as string;
         session.user.subscriptionStatus = token.subscriptionStatus as string;
         session.user.subscriptionTier = token.subscriptionTier as string;
       }
@@ -83,6 +86,7 @@ declare module 'next-auth' {
   interface User {
     id: string;
     companyName?: string | null;
+    role?: string | null;
     subscriptionStatus?: string | null;
     subscriptionTier?: string | null;
   }
@@ -91,6 +95,7 @@ declare module 'next-auth' {
     user: User & {
       id: string;
       companyName?: string;
+      role?: string;
       subscriptionStatus?: string;
       subscriptionTier?: string;
     };
@@ -101,6 +106,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     companyName?: string;
+    role?: string;
     subscriptionStatus?: string;
     subscriptionTier?: string;
   }

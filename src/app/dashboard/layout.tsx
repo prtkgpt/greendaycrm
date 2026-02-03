@@ -17,7 +17,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardNav />
+      <DashboardNav userRole={session.user.role} />
       <div className="lg:pl-64">
         <DashboardHeader user={session.user} />
         <main className="p-4 lg:p-8">

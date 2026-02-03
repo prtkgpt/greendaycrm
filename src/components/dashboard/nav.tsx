@@ -25,12 +25,18 @@ const navItems = [
   { href: '/dashboard/routes', label: 'Routes', icon: Route },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/dashboard/blog', label: 'Blog', icon: Newspaper },
+  { href: '/dashboard/blog', label: 'Blog', icon: Newspaper, adminOnly: true },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-export function DashboardNav() {
+interface DashboardNavProps {
+  userRole?: string;
+}
+
+export function DashboardNav({ userRole }: DashboardNavProps) {
   const pathname = usePathname();
+  const isAdmin = userRole === 'admin';
+  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <>
@@ -50,7 +56,7 @@ export function DashboardNav() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const isActive = pathname === item.href ||
                 (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
@@ -98,7 +104,7 @@ export function DashboardNav() {
       {/* Mobile bottom navigation */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex justify-around">
-          {navItems.slice(0, 5).map((item) => {
+          {filteredNavItems.slice(0, 5).map((item) => {
             const isActive = pathname === item.href ||
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
