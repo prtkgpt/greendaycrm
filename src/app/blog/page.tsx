@@ -3,7 +3,7 @@ import { Leaf, ArrowRight, Calendar, Clock, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getRecentPosts, getAllCategories } from '@/data/blog-posts';
+import prisma from '@/lib/prisma';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -15,9 +15,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogPage() {
-  const posts = getRecentPosts(20);
-  const categories = getAllCategories();
+export const dynamic = 'force-dynamic';
+
+export default async function BlogPage() {
+  const posts = await prisma.blogPost.findMany({
+    where: { published: true },
+    orderBy: { publishedAt: 'desc' },
+  });
+
+  const categories = Array.from(new Set(posts.map((p) => p.category)));
   const featuredPost = posts[0];
   const remainingPosts = posts.slice(1);
 
@@ -69,16 +75,18 @@ export default function BlogPage() {
       </section>
 
       {/* Categories */}
-      <section className="px-4 py-6 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto flex items-center gap-3 flex-wrap">
-          <span className="text-sm font-medium text-gray-500">Topics:</span>
-          {categories.map((category) => (
-            <Badge key={category} variant="secondary" className="cursor-pointer hover:bg-gray-200">
-              {category}
-            </Badge>
-          ))}
-        </div>
-      </section>
+      {categories.length > 0 && (
+        <section className="px-4 py-6 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-medium text-gray-500">Topics:</span>
+            {categories.map((category) => (
+              <Badge key={category} variant="secondary" className="cursor-pointer hover:bg-gray-200">
+                {category}
+              </Badge>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Featured Post */}
       {featuredPost && (
@@ -100,14 +108,16 @@ export default function BlogPage() {
                           {featuredPost.excerpt}
                         </p>
                         <div className="flex items-center gap-4 text-emerald-100 text-sm">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(featuredPost.publishedAt).toLocaleDateString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </span>
+                          {featuredPost.publishedAt && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(featuredPost.publishedAt).toLocaleDateString('en-US', {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
                             {featuredPost.readTime} min read
@@ -135,43 +145,55 @@ export default function BlogPage() {
       {/* All Posts */}
       <section className="px-4 py-12">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">All Articles</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {remainingPosts.map((post) => (
-              <Link key={post.slug} href={`/blog/${post.slug}`}>
-                <Card className="h-full border-0 shadow-md hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="secondary">{post.category}</Badge>
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {post.readTime} min
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {post.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
-                      {post.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-400">
-                        {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span className="text-sm text-emerald-600 font-medium inline-flex items-center gap-1">
-                        Read more
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          {remainingPosts.length > 0 ? (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">All Articles</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {remainingPosts.map((post) => (
+                  <Link key={post.slug} href={`/blog/${post.slug}`}>
+                    <Card className="h-full border-0 shadow-md hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6 flex flex-col h-full">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge variant="secondary">{post.category}</Badge>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {post.readTime} min
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                          <span className="text-xs text-gray-400">
+                            {post.publishedAt
+                              ? new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })
+                              : ''}
+                          </span>
+                          <span className="text-sm text-emerald-600 font-medium inline-flex items-center gap-1">
+                            Read more
+                            <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : !featuredPost ? (
+            <div className="text-center py-16">
+              <Leaf className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Coming Soon</h2>
+              <p className="text-gray-500">We&apos;re working on great content for you. Check back soon!</p>
+            </div>
+          ) : null}
         </div>
       </section>
 

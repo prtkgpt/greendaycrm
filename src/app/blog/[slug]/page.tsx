@@ -4,22 +4,21 @@ import { Leaf, ArrowLeft, ArrowRight, Calendar, Clock, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getBlogPost, getRecentPosts, blogPosts } from '@/data/blog-posts';
+import prisma from '@/lib/prisma';
 import type { Metadata } from 'next';
 
 interface Props {
   params: { slug: string };
 }
 
-export async function generateStaticParams() {
-  return blogPosts.map((post) => ({
-    slug: post.slug,
-  }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = getBlogPost(params.slug);
-  if (!post) return { title: 'Post Not Found' };
+  const post = await prisma.blogPost.findUnique({
+    where: { slug: params.slug },
+  });
+
+  if (!post || !post.published) return { title: 'Post Not Found' };
 
   return {
     title: post.title,
@@ -28,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: post.title,
       description: post.excerpt,
       type: 'article',
-      publishedTime: post.publishedAt,
+      publishedTime: post.publishedAt?.toISOString(),
       authors: [post.author],
       tags: post.tags,
     },
@@ -39,10 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 function renderContent(content: string) {
   const lines = content.split('\n');
   const elements: JSX.Element[] = [];
-  let inList = false;
   let inTable = false;
   let tableRows: string[][] = [];
   let listItems: string[] = [];
+  let inList = false;
 
   const flushList = () => {
     if (listItems.length > 0) {
@@ -178,7 +177,6 @@ function renderContent(content: string) {
 }
 
 function renderInline(text: string): React.ReactNode {
-  // Simple bold/italic inline rendering
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -188,14 +186,23 @@ function renderInline(text: string): React.ReactNode {
   });
 }
 
-export default function BlogPostPage({ params }: Props) {
-  const post = getBlogPost(params.slug);
+export default async function BlogPostPage({ params }: Props) {
+  const post = await prisma.blogPost.findUnique({
+    where: { slug: params.slug },
+  });
 
-  if (!post) {
+  if (!post || !post.published) {
     notFound();
   }
 
-  const recentPosts = getRecentPosts(4).filter((p) => p.slug !== post.slug).slice(0, 3);
+  const recentPosts = await prisma.blogPost.findMany({
+    where: {
+      published: true,
+      slug: { not: post.slug },
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: 3,
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -254,14 +261,16 @@ export default function BlogPostPage({ params }: Props) {
             </h1>
             <p className="text-lg text-gray-600 mb-6">{post.excerpt}</p>
             <div className="flex items-center gap-6 text-sm text-gray-500 pb-6 border-b border-gray-100">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </span>
+              {post.publishedAt && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
                 {post.readTime} min read
@@ -276,16 +285,18 @@ export default function BlogPostPage({ params }: Props) {
           </div>
 
           {/* Tags */}
-          <div className="mt-10 pt-6 border-t border-gray-100">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Tag className="w-4 h-4 text-gray-400" />
-              {post.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
+          {post.tags.length > 0 && (
+            <div className="mt-10 pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag className="w-4 h-4 text-gray-400" />
+                {post.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </article>
 
@@ -326,10 +337,12 @@ export default function BlogPostPage({ params }: Props) {
                       </p>
                       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                         <span className="text-xs text-gray-400">
-                          {new Date(p.publishedAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                          {p.publishedAt
+                            ? new Date(p.publishedAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : ''}
                         </span>
                         <span className="text-sm text-emerald-600 font-medium">
                           Read more &rarr;

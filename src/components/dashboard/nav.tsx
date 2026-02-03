@@ -13,6 +13,7 @@ import {
   Settings,
   Leaf,
   Wrench,
+  Newspaper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/dashboard/routes', label: 'Routes', icon: Route },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/dashboard/blog', label: 'Blog', icon: Newspaper },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
