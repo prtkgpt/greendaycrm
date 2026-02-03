@@ -130,6 +130,9 @@ export default function LandingPage() {
               <Link href="#testimonials" className="text-gray-600 hover:text-gray-900">
                 Testimonials
               </Link>
+              <Link href="/blog" className="text-gray-600 hover:text-gray-900">
+                Blog
+              </Link>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/team-login">
@@ -366,12 +369,13 @@ export default function LandingPage() {
               <span className="font-bold text-white">GreenDay CRM</span>
             </div>
             <div className="flex gap-6 text-sm">
+              <Link href="/blog" className="hover:text-white">Blog</Link>
               <Link href="/terms" className="hover:text-white">Terms</Link>
               <Link href="/privacy" className="hover:text-white">Privacy</Link>
               <Link href="/help" className="hover:text-white">Help Center</Link>
               <a href="mailto:support@greendaycrm.com" className="hover:text-white">Contact</a>
             </div>
-            <p className="text-sm">© 2024 GreenDay CRM. All rights reserved.</p>
+            <p className="text-sm">&copy; 2025 GreenDay CRM. All rights reserved.</p>
           </div>
         </div>
       </footer>
