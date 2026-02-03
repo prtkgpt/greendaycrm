@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+// Tenant nav - landscaping company owners
+const tenantNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/customers', label: 'Customers', icon: Users },
   { href: '/dashboard/jobs', label: 'Jobs', icon: Calendar },
@@ -26,8 +27,14 @@ const navItems = [
   { href: '/dashboard/routes', label: 'Routes', icon: Route },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/dashboard/admin/accounts', label: 'Accounts', icon: Building2, adminOnly: true },
-  { href: '/dashboard/blog', label: 'Blog', icon: Newspaper, adminOnly: true },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+];
+
+// Platform admin nav - GreenDay team
+const adminNavItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/admin/accounts', label: 'Accounts', icon: Building2 },
+  { href: '/dashboard/blog', label: 'Blog', icon: Newspaper },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -38,7 +45,7 @@ interface DashboardNavProps {
 export function DashboardNav({ userRole }: DashboardNavProps) {
   const pathname = usePathname();
   const isAdmin = userRole === 'admin';
-  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const navItems = isAdmin ? adminNavItems : tenantNavItems;
 
   return (
     <>
@@ -58,7 +65,7 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {filteredNavItems.map((item) => {
+            {navItems.map((item) => {
               const isActive = pathname === item.href ||
                 (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
@@ -85,16 +92,18 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
             })}
           </nav>
 
-          {/* Crew App Link */}
-          <div className="p-4 border-t border-gray-100">
-            <Link
-              href="/crew"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <Wrench className="w-5 h-5 text-gray-400" />
-              Crew App
-            </Link>
-          </div>
+          {/* Crew App Link - tenant only */}
+          {!isAdmin && (
+            <div className="p-4 border-t border-gray-100">
+              <Link
+                href="/crew"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              >
+                <Wrench className="w-5 h-5 text-gray-400" />
+                Crew App
+              </Link>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-100">
@@ -106,7 +115,7 @@ export function DashboardNav({ userRole }: DashboardNavProps) {
       {/* Mobile bottom navigation */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex justify-around">
-          {filteredNavItems.slice(0, 5).map((item) => {
+          {navItems.slice(0, 5).map((item) => {
             const isActive = pathname === item.href ||
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
